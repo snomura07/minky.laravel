@@ -8,47 +8,41 @@ use Illuminate\Support\Collection;
 
 class DailyWeatherStatRepository
 {
-    private const LOCATION_TOLERANCE = 0.01;
-
-    public function upsertByDate(float $latitude, float $longitude, CarbonInterface $date, array $attributes): DailyWeatherStat
+    public function upsertByDate(int $cityId, CarbonInterface $date, array $attributes): DailyWeatherStat
     {
         DailyWeatherStat::query()->updateOrCreate(
             [
+                'city_id' => $cityId,
                 'measured_date' => $date->toDateString(),
-                'latitude' => $latitude,
-                'longitude' => $longitude,
             ],
             $attributes
         );
 
-        return $this->findByDate($latitude, $longitude, $date);
+        return $this->findByDate($cityId, $date);
     }
 
-    public function findByDate(float $latitude, float $longitude, CarbonInterface $date): ?DailyWeatherStat
+    public function findByDate(int $cityId, CarbonInterface $date): ?DailyWeatherStat
     {
         return DailyWeatherStat::query()
-            ->whereBetween('latitude', [$latitude - self::LOCATION_TOLERANCE, $latitude + self::LOCATION_TOLERANCE])
-            ->whereBetween('longitude', [$longitude - self::LOCATION_TOLERANCE, $longitude + self::LOCATION_TOLERANCE])
+            ->where('city_id', $cityId)
             ->whereDate('measured_date', $date->toDateString())
             ->latest('id')
             ->first();
     }
 
-    public function findLatest(float $latitude, float $longitude): ?DailyWeatherStat
+    public function findLatest(int $cityId): ?DailyWeatherStat
     {
         return DailyWeatherStat::query()
-            ->whereBetween('latitude', [$latitude - self::LOCATION_TOLERANCE, $latitude + self::LOCATION_TOLERANCE])
-            ->whereBetween('longitude', [$longitude - self::LOCATION_TOLERANCE, $longitude + self::LOCATION_TOLERANCE])
+            ->where('city_id', $cityId)
             ->orderByDesc('measured_date')
             ->latest('id')
             ->first();
     }
 
-    public function findMonthlyTrend(float $latitude, float $longitude, CarbonInterface $fromDate, CarbonInterface $toDate): Collection
+    public function findMonthlyTrend(int $cityId, CarbonInterface $fromDate, CarbonInterface $toDate): Collection
     {
         return DailyWeatherStat::query()
-            ->whereBetween('latitude', [$latitude - self::LOCATION_TOLERANCE, $latitude + self::LOCATION_TOLERANCE])
-            ->whereBetween('longitude', [$longitude - self::LOCATION_TOLERANCE, $longitude + self::LOCATION_TOLERANCE])
+            ->where('city_id', $cityId)
             ->whereBetween('measured_date', [$fromDate->toDateString(), $toDate->toDateString()])
             ->orderBy('measured_date')
             ->get([

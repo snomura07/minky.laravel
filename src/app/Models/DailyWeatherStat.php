@@ -9,6 +9,7 @@ class DailyWeatherStat extends Model
     protected $table = 'daily_weather_stats';
 
     protected $fillable = [
+        'city_id',
         'latitude',
         'longitude',
         'measured_date',
@@ -21,6 +22,7 @@ class DailyWeatherStat extends Model
     ];
 
     protected $casts = [
+        'city_id' => 'integer',
         'measured_date' => 'date',
         'average_temperature' => 'float',
         'average_humidity' => 'float',

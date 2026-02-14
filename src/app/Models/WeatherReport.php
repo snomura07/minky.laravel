@@ -9,6 +9,7 @@ class WeatherReport extends Model
     protected $table = 'weather_reports';
 
     protected $fillable = [
+        'city_id',
         'latitude',
         'longitude',
         'measured_time',
@@ -19,6 +20,7 @@ class WeatherReport extends Model
     ];
 
     protected $casts = [
+        'city_id' => 'integer',
         'measured_time' => 'datetime',
         'temperature' => 'float',
         'humidity' => 'float',

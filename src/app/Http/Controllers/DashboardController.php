@@ -7,12 +7,11 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    private const FUKUI_LAT = 36.063;
-    private const FUKUI_LON = 136.218;
+    private const FUKUI_CITY_ID = 2;
 
     public function __invoke(DailyWeatherStatAction $dailyWeatherStatAction): View
     {
-        $trend = $dailyWeatherStatAction->getMonthlyTrend(self::FUKUI_LAT, self::FUKUI_LON)
+        $trend = $dailyWeatherStatAction->getMonthlyTrend(self::FUKUI_CITY_ID)
             ->filter(fn ($row) => $row->average_temperature !== null)
             ->map(fn ($row) => [
                 'date' => (string) $row->measured_date,
@@ -20,7 +19,7 @@ class DashboardController extends Controller
             ])
             ->values();
 
-        $todayStat = $dailyWeatherStatAction->getTodayExtremes(self::FUKUI_LAT, self::FUKUI_LON);
+        $todayStat = $dailyWeatherStatAction->getTodayExtremes(self::FUKUI_CITY_ID);
 
         return view('dashboard', [
             'title' => '福井気温ダッシュボード',

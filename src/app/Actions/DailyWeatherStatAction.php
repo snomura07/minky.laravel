@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\DailyWeatherStat;
+use App\Repositories\CityRepository;
 use App\Repositories\DailyWeatherStatRepository;
 use App\Repositories\WeatherReportRepository;
 use Carbon\CarbonImmutable;
@@ -12,24 +13,32 @@ use Illuminate\Support\Collection;
 class DailyWeatherStatAction
 {
     public function __construct(
+        private readonly CityRepository $cityRepository,
         private readonly WeatherReportRepository $weatherReportRepository,
         private readonly DailyWeatherStatRepository $dailyWeatherStatRepository
     ) {
     }
 
-    public function aggregateAndStore(float $latitude, float $longitude, ?CarbonInterface $date = null): ?DailyWeatherStat
+    public function aggregateAndStore(int $cityId, ?CarbonInterface $date = null): ?DailyWeatherStat
     {
+        $city = $this->cityRepository->findById($cityId);
+        if ($city === null) {
+            throw new \InvalidArgumentException("city_id={$cityId} が cities に存在しません。");
+        }
+
         $targetDate = $date ? CarbonImmutable::instance($date) : CarbonImmutable::today('Asia/Tokyo');
-        $aggregate = $this->weatherReportRepository->getDailyAggregate($targetDate);
+        $aggregate = $this->weatherReportRepository->getDailyAggregateByCityId($targetDate, $cityId);
         if ($aggregate === null || $aggregate->avg_temperature === null) {
             return null;
         }
 
         return $this->dailyWeatherStatRepository->upsertByDate(
-            $latitude,
-            $longitude,
+            $cityId,
             $targetDate,
             [
+                'city_id' => $cityId,
+                'latitude' => (float) $city->latitude,
+                'longitude' => (float) $city->longitude,
                 'average_temperature' => (float) $aggregate->avg_temperature,
                 'average_humidity' => (float) $aggregate->avg_humidity,
                 'average_wind_speed' => (float) $aggregate->avg_wind_speed,
@@ -40,27 +49,22 @@ class DailyWeatherStatAction
         );
     }
 
-    public function getMonthlyTrend(float $latitude, float $longitude): Collection
+    public function getMonthlyTrend(int $cityId): Collection
     {
         $today = CarbonImmutable::today('Asia/Tokyo');
         $fromDate = $today->subDays(29);
 
-        return $this->dailyWeatherStatRepository->findMonthlyTrend(
-            $latitude,
-            $longitude,
-            $fromDate,
-            $today
-        );
+        return $this->dailyWeatherStatRepository->findMonthlyTrend($cityId, $fromDate, $today);
     }
 
-    public function getTodayExtremes(float $latitude, float $longitude): ?DailyWeatherStat
+    public function getTodayExtremes(int $cityId): ?DailyWeatherStat
     {
         $today = CarbonImmutable::today('Asia/Tokyo');
-        $todayStat = $this->dailyWeatherStatRepository->findByDate($latitude, $longitude, $today);
+        $todayStat = $this->dailyWeatherStatRepository->findByDate($cityId, $today);
         if ($todayStat !== null) {
             return $todayStat;
         }
 
-        return $this->dailyWeatherStatRepository->findLatest($latitude, $longitude);
+        return $this->dailyWeatherStatRepository->findLatest($cityId);
     }
 }

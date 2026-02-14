@@ -155,7 +155,7 @@
 
             <section class="chart-panel">
                 <h2 class="chart-title">過去30日の日次平均気温</h2>
-                <p class="chart-meta">対象地域: 福井（緯度 36.063 / 経度 136.218）</p>
+                <p class="chart-meta">対象地域: 福井（city_id: 2）</p>
                 <div class="chart-area">
                     <canvas id="temperature-chart" data-chart='@json($chartData)'></canvas>
                 </div>
