@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: minky-laravel-app
+    working_dir: /var/www/html
+    volumes:
+      - ../src:/var/www/html
+      - ./php-fpm/www.conf:/usr/local/etc/php-fpm.d/www.conf:ro
+      - ./php/conf.d/custom.ini:/usr/local/etc/php/conf.d/zzz-custom.ini:ro
+    environment:
+      TZ: Asia/Tokyo
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: minky-laravel-web
+    ports:
+      - "8088:80"
+    volumes:
+      - ../src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    container_name: minky-laravel-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: minky
+      MYSQL_USER: minky
+      MYSQL_PASSWORD: secret
+      TZ: Asia/Tokyo
+    ports:
+      - "3306:3306"
+    volumes:
+      - ../db:/var/lib/mysql
+    restart: unless-stopped
