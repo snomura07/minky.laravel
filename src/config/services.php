@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL', ''),
+        'discode_id' => env('DISCODE_ID', ''),
+        'discode_token' => env('DISCODE_TOKEN', ''),
+    ],
+
 ];

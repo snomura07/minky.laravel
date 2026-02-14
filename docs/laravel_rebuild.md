@@ -31,8 +31,10 @@
 ## バッチ相当（artisan command）
 - `weather:fetch-current`
   - Open-Meteo API から現在値を取得して `weather_reports` に保存
+  - 保存後に Discord Webhook へ通知
 - `weather:aggregate-daily`
   - `weather_reports` を日次集計して `daily_weather_stats` に保存
+  - 保存後に Discord Webhook へ通知
 - `weather:seed-daily`
   - 画面確認用に `daily_weather_stats` のテストデータを投入
 
@@ -51,3 +53,10 @@
 ## php.ini 設定外出し
 - `docker/php/conf.d/custom.ini` を `app` コンテナにマウントしています。
 - `memory_limit`, `max_execution_time`, `upload_max_filesize` などをここで管理します。
+
+## Discord 通知設定
+- 旧 `DiscodeAction` 相当を `src/app/Actions/DiscodeAction.php` として移植済みです。
+- 通知先は次の優先順で解決します。
+  1. `DISCORD_WEBHOOK_URL`
+  2. `DISCODE_ID` + `DISCODE_TOKEN`
+- 未設定時はコマンド本体は継続し、通知のみスキップします。
