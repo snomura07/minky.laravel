@@ -135,7 +135,7 @@
     <main class="wrap">
         <section class="panel">
             <h1>{{ $title }}</h1>
-            <p class="sub">過去1か月の日次平均気温の推移と、当日の最高・最低気温を表示します。</p>
+            <p class="sub">当日の気温推移と、当日の最高・最低気温を表示します。</p>
 
             @if ($todayStats)
                 <section class="cards">
@@ -154,13 +154,13 @@
             @endif
 
             <section class="chart-panel">
-                <h2 class="chart-title">過去30日の日次平均気温</h2>
+                <h2 class="chart-title">当日の気温推移</h2>
                 <p class="chart-meta">対象地域: 福井（city_id: 2）</p>
                 <div class="chart-area">
                     <canvas id="temperature-chart" data-chart='@json($chartData)'></canvas>
                 </div>
                 @if ($chartData->isEmpty())
-                    <p class="empty">過去1か月分の気温データがありません。</p>
+                    <p class="empty">当日の気温データがありません。</p>
                 @endif
             </section>
         </section>
@@ -191,7 +191,7 @@
             const chartW = width - pad.left - pad.right;
             const chartH = height - pad.top - pad.bottom;
 
-            const values = points.map((p) => Number(p.average_temperature)).filter(Number.isFinite);
+            const values = points.map((p) => Number(p.temperature)).filter(Number.isFinite);
             if (values.length === 0) return;
 
             const min = Math.min(...values);
@@ -227,7 +227,7 @@
             ctx.beginPath();
             points.forEach((p, i) => {
                 const x = xAt(i);
-                const y = yAt(Number(p.average_temperature));
+                const y = yAt(Number(p.temperature));
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
@@ -240,7 +240,7 @@
             ctx.beginPath();
             points.forEach((p, i) => {
                 const x = xAt(i);
-                const y = yAt(Number(p.average_temperature));
+                const y = yAt(Number(p.temperature));
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
@@ -251,15 +251,15 @@
             ctx.fillStyle = '#2f7dfa';
             points.forEach((p, i) => {
                 ctx.beginPath();
-                ctx.arc(xAt(i), yAt(Number(p.average_temperature)), 3, 0, Math.PI * 2);
+                ctx.arc(xAt(i), yAt(Number(p.temperature)), 3, 0, Math.PI * 2);
                 ctx.fill();
             });
 
             ctx.fillStyle = '#65789c';
             ctx.textAlign = 'left';
-            ctx.fillText(points[0].date || '', pad.left, height - 8);
+            ctx.fillText(points[0].time || '', pad.left, height - 8);
             ctx.textAlign = 'right';
-            ctx.fillText(points[points.length - 1].date || '', width - pad.right, height - 8);
+            ctx.fillText(points[points.length - 1].time || '', width - pad.right, height - 8);
         }());
     </script>
 </body>

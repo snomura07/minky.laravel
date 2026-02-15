@@ -6,6 +6,7 @@ use App\Repositories\CityRepository;
 use App\Models\WeatherReport;
 use App\Repositories\WeatherReportRepository;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class WeatherReportAction
@@ -42,5 +43,33 @@ class WeatherReportAction
             'wind_speed' => (float) $current['wind_speed_10m'],
             'precipitation' => (float) $current['precipitation'],
         ]);
+    }
+
+    public function getTodayTrend(int $cityId): Collection
+    {
+        $today = CarbonImmutable::today('Asia/Tokyo');
+        return $this->weatherReportRepository
+            ->findDailyTemperatureTrendByCityId($today, $cityId)
+            ->filter(fn ($row) => $row->temperature !== null)
+            ->map(fn ($row) => [
+                'time' => $row->measured_time->format('H:i'),
+                'temperature' => round((float) $row->temperature, 1),
+            ])
+            ->values();
+    }
+
+    public function getTodayExtremes(int $cityId): ?array
+    {
+        $today = CarbonImmutable::today('Asia/Tokyo');
+        $todayStat = $this->weatherReportRepository->findDailyTemperatureExtremesByCityId($today, $cityId);
+        if ($todayStat === null || ($todayStat->max_temperature === null && $todayStat->min_temperature === null)) {
+            return null;
+        }
+
+        return [
+            'date' => $today->toDateString(),
+            'max_temperature' => $todayStat->max_temperature !== null ? round((float) $todayStat->max_temperature, 1) : null,
+            'min_temperature' => $todayStat->min_temperature !== null ? round((float) $todayStat->min_temperature, 1) : null,
+        ];
     }
 }
