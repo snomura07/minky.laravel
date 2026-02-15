@@ -55,3 +55,14 @@ php artisan weather:aggregate-daily
 ```bash
 php artisan weather:aggregate-daily --city-id=2
 ```
+
+## 権限エラー対処（Laravel `storage` / `bootstrap/cache`）
+`file_put_contents(.../storage/framework/views/...): Failed to open stream: Permission denied` が出る場合は、コンテナ内の書き込み権限を修正してください。
+
+```bash
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R ug+rwX /var/www/html/storage /var/www/html/bootstrap/cache
+
+php artisan view:clear
+php artisan cache:clear
+```
