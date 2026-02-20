@@ -45,11 +45,10 @@ class WeatherReportAction
         ]);
     }
 
-    public function getTodayTrend(int $cityId): Collection
+    public function getTrendByDate(int $cityId, CarbonImmutable $date): Collection
     {
-        $today = CarbonImmutable::today('Asia/Tokyo');
         return $this->weatherReportRepository
-            ->findDailyTemperatureTrendByCityId($today, $cityId)
+            ->findDailyTemperatureTrendByCityId($date, $cityId)
             ->filter(fn ($row) => $row->temperature !== null)
             ->map(fn ($row) => [
                 'time' => $row->measured_time->format('H:i'),
@@ -58,18 +57,17 @@ class WeatherReportAction
             ->values();
     }
 
-    public function getTodayExtremes(int $cityId): ?array
+    public function getExtremesByDate(int $cityId, CarbonImmutable $date): ?array
     {
-        $today = CarbonImmutable::today('Asia/Tokyo');
-        $todayStat = $this->weatherReportRepository->findDailyTemperatureExtremesByCityId($today, $cityId);
-        if ($todayStat === null || ($todayStat->max_temperature === null && $todayStat->min_temperature === null)) {
+        $stat = $this->weatherReportRepository->findDailyTemperatureExtremesByCityId($date, $cityId);
+        if ($stat === null || ($stat->max_temperature === null && $stat->min_temperature === null)) {
             return null;
         }
 
         return [
-            'date' => $today->toDateString(),
-            'max_temperature' => $todayStat->max_temperature !== null ? round((float) $todayStat->max_temperature, 1) : null,
-            'min_temperature' => $todayStat->min_temperature !== null ? round((float) $todayStat->min_temperature, 1) : null,
+            'date' => $date->toDateString(),
+            'max_temperature' => $stat->max_temperature !== null ? round((float) $stat->max_temperature, 1) : null,
+            'min_temperature' => $stat->min_temperature !== null ? round((float) $stat->min_temperature, 1) : null,
         ];
     }
 }

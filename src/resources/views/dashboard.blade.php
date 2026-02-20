@@ -50,6 +50,40 @@
             font-size: 0.95rem;
         }
 
+        .date-form {
+            margin-top: 14px;
+            display: flex;
+            align-items: end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .date-form label {
+            display: grid;
+            gap: 6px;
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .date-form input[type="date"] {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--text-main);
+        }
+
+        .date-form button {
+            padding: 9px 14px;
+            border: 1px solid #2f7dfa;
+            border-radius: 10px;
+            background: #2f7dfa;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
         .cards {
             margin-top: 20px;
             display: grid;
@@ -135,32 +169,39 @@
     <main class="wrap">
         <section class="panel">
             <h1>{{ $title }}</h1>
-            <p class="sub">当日の気温推移と、当日の最高・最低気温を表示します。</p>
+            <p class="sub">選択した1日分の気温推移と、最高・最低気温を表示します。</p>
+            <form class="date-form" method="get" action="{{ route('dashboard') }}">
+                <label>
+                    取得日
+                    <input type="date" name="date" value="{{ $selectedDate }}">
+                </label>
+                <button type="submit">表示更新</button>
+            </form>
 
-            @if ($todayStats)
+            @if ($dayStats)
                 <section class="cards">
                     <article class="card max">
-                        <p class="label">当日の最高気温</p>
-                        <p class="value">{{ is_null($todayStats['max_temperature']) ? '--' : number_format($todayStats['max_temperature'], 1).'℃' }}</p>
+                        <p class="label">最高気温</p>
+                        <p class="value">{{ is_null($dayStats['max_temperature']) ? '--' : number_format($dayStats['max_temperature'], 1).'℃' }}</p>
                     </article>
                     <article class="card min">
-                        <p class="label">当日の最低気温</p>
-                        <p class="value">{{ is_null($todayStats['min_temperature']) ? '--' : number_format($todayStats['min_temperature'], 1).'℃' }}</p>
+                        <p class="label">最低気温</p>
+                        <p class="value">{{ is_null($dayStats['min_temperature']) ? '--' : number_format($dayStats['min_temperature'], 1).'℃' }}</p>
                     </article>
                 </section>
-                <p class="meta">対象日: {{ $todayStats['date'] }}</p>
+                <p class="meta">対象日: {{ $dayStats['date'] }}</p>
             @else
-                <p class="empty">当日の気温データが存在しません。</p>
+                <p class="empty">選択日の気温データが存在しません。</p>
             @endif
 
             <section class="chart-panel">
-                <h2 class="chart-title">当日の気温推移</h2>
+                <h2 class="chart-title">気温推移</h2>
                 <p class="chart-meta">対象地域: 福井（city_id: 2）</p>
                 <div class="chart-area">
                     <canvas id="temperature-chart" data-chart='@json($chartData)'></canvas>
                 </div>
                 @if ($chartData->isEmpty())
-                    <p class="empty">当日の気温データがありません。</p>
+                    <p class="empty">選択日の気温データがありません。</p>
                 @endif
             </section>
         </section>
