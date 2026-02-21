@@ -45,27 +45,30 @@ class WeatherReportAction
         ]);
     }
 
-    public function getTrendByDate(int $cityId, CarbonImmutable $date): Collection
+    public function getTrendByPeriod(int $cityId, CarbonImmutable $fromDate, CarbonImmutable $toDate): Collection
     {
+        $isSingleDay = $fromDate->isSameDay($toDate);
+
         return $this->weatherReportRepository
-            ->findDailyTemperatureTrendByCityId($date, $cityId)
+            ->findTemperatureTrendByCityId($fromDate, $toDate, $cityId)
             ->filter(fn ($row) => $row->temperature !== null)
             ->map(fn ($row) => [
-                'time' => $row->measured_time->format('H:i'),
+                'time' => $isSingleDay
+                    ? $row->measured_time->format('H:i')
+                    : $row->measured_time->format('m/d H:i'),
                 'temperature' => round((float) $row->temperature, 1),
             ])
             ->values();
     }
 
-    public function getExtremesByDate(int $cityId, CarbonImmutable $date): ?array
+    public function getExtremesByPeriod(int $cityId, CarbonImmutable $fromDate, CarbonImmutable $toDate): ?array
     {
-        $stat = $this->weatherReportRepository->findDailyTemperatureExtremesByCityId($date, $cityId);
+        $stat = $this->weatherReportRepository->findTemperatureExtremesByCityId($fromDate, $toDate, $cityId);
         if ($stat === null || ($stat->max_temperature === null && $stat->min_temperature === null)) {
             return null;
         }
 
         return [
-            'date' => $date->toDateString(),
             'max_temperature' => $stat->max_temperature !== null ? round((float) $stat->max_temperature, 1) : null,
             'min_temperature' => $stat->min_temperature !== null ? round((float) $stat->min_temperature, 1) : null,
         ];

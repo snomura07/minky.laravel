@@ -32,8 +32,16 @@ class WeatherReportRepository
 
     public function findDailyTemperatureTrendByCityId(CarbonInterface $date, int $cityId): Collection
     {
-        $start = $date->copy()->startOfDay();
-        $end = $date->copy()->endOfDay();
+        return $this->findTemperatureTrendByCityId($date, $date, $cityId);
+    }
+
+    public function findTemperatureTrendByCityId(
+        CarbonInterface $fromDate,
+        CarbonInterface $toDate,
+        int $cityId
+    ): Collection {
+        $start = $fromDate->copy()->startOfDay();
+        $end = $toDate->copy()->endOfDay();
 
         return WeatherReport::query()
             ->whereBetween('measured_time', [$start, $end])
@@ -44,8 +52,16 @@ class WeatherReportRepository
 
     public function findDailyTemperatureExtremesByCityId(CarbonInterface $date, int $cityId): ?object
     {
-        $start = $date->copy()->startOfDay();
-        $end = $date->copy()->endOfDay();
+        return $this->findTemperatureExtremesByCityId($date, $date, $cityId);
+    }
+
+    public function findTemperatureExtremesByCityId(
+        CarbonInterface $fromDate,
+        CarbonInterface $toDate,
+        int $cityId
+    ): ?object {
+        $start = $fromDate->copy()->startOfDay();
+        $end = $toDate->copy()->endOfDay();
 
         return WeatherReport::query()
             ->whereBetween('measured_time', [$start, $end])

@@ -169,11 +169,15 @@
     <main class="wrap">
         <section class="panel">
             <h1>{{ $title }}</h1>
-            <p class="sub">選択した1日分の気温推移と、最高・最低気温を表示します。</p>
+            <p class="sub">単日または期間を指定して、気温推移と最高・最低気温を表示します（最大183日）。</p>
             <form class="date-form" method="get" action="{{ route('dashboard') }}">
                 <label>
-                    取得日
-                    <input type="date" name="date" value="{{ $selectedDate }}">
+                    開始日
+                    <input type="date" name="from" value="{{ $selectedFrom }}">
+                </label>
+                <label>
+                    終了日
+                    <input type="date" name="to" value="{{ $selectedTo }}">
                 </label>
                 <button type="submit">表示更新</button>
             </form>
@@ -189,9 +193,9 @@
                         <p class="value">{{ is_null($dayStats['min_temperature']) ? '--' : number_format($dayStats['min_temperature'], 1).'℃' }}</p>
                     </article>
                 </section>
-                <p class="meta">対象日: {{ $dayStats['date'] }}</p>
+                <p class="meta">対象期間: {{ $periodLabel }}</p>
             @else
-                <p class="empty">選択日の気温データが存在しません。</p>
+                <p class="empty">選択期間の気温データが存在しません。</p>
             @endif
 
             <section class="chart-panel">
@@ -201,7 +205,7 @@
                     <canvas id="temperature-chart" data-chart='@json($chartData)'></canvas>
                 </div>
                 @if ($chartData->isEmpty())
-                    <p class="empty">選択日の気温データがありません。</p>
+                    <p class="empty">選択期間の気温データがありません。</p>
                 @endif
             </section>
         </section>
@@ -220,6 +224,23 @@
             }
             if (!Array.isArray(points) || points.length === 0) return;
 
+            const samplePoints = (source, maxPoints) => {
+                if (!Array.isArray(source) || source.length <= maxPoints) return source;
+                const sampled = [];
+                const used = new Set();
+                const step = (source.length - 1) / (maxPoints - 1);
+                for (let i = 0; i < maxPoints; i += 1) {
+                    const idx = Math.round(i * step);
+                    if (used.has(idx)) continue;
+                    used.add(idx);
+                    sampled.push(source[idx]);
+                }
+                if (sampled[sampled.length - 1] !== source[source.length - 1]) {
+                    sampled[sampled.length - 1] = source[source.length - 1];
+                }
+                return sampled;
+            };
+
             const ctx = canvas.getContext('2d');
             const ratio = window.devicePixelRatio || 1;
             const width = canvas.clientWidth;
@@ -234,6 +255,8 @@
 
             const values = points.map((p) => Number(p.temperature)).filter(Number.isFinite);
             if (values.length === 0) return;
+            const maxPointCount = Math.max(24, Math.min(360, Math.floor(chartW / 6)));
+            const plotPoints = samplePoints(points, maxPointCount);
 
             const min = Math.min(...values);
             const max = Math.max(...values);
@@ -256,9 +279,9 @@
                 ctx.fillText(temp + '℃', 4, y + 4);
             }
 
-            const xAt = (idx) => points.length === 1
+            const xAt = (idx) => plotPoints.length === 1
                 ? pad.left + chartW / 2
-                : pad.left + (chartW * idx) / (points.length - 1);
+                : pad.left + (chartW * idx) / (plotPoints.length - 1);
             const yAt = (value) => pad.top + ((max - value) / range) * chartH;
 
             const grad = ctx.createLinearGradient(0, pad.top, 0, height - pad.bottom);
@@ -266,20 +289,20 @@
             grad.addColorStop(1, 'rgba(47, 125, 250, 0.02)');
 
             ctx.beginPath();
-            points.forEach((p, i) => {
+            plotPoints.forEach((p, i) => {
                 const x = xAt(i);
                 const y = yAt(Number(p.temperature));
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
-            ctx.lineTo(xAt(points.length - 1), height - pad.bottom);
+            ctx.lineTo(xAt(plotPoints.length - 1), height - pad.bottom);
             ctx.lineTo(xAt(0), height - pad.bottom);
             ctx.closePath();
             ctx.fillStyle = grad;
             ctx.fill();
 
             ctx.beginPath();
-            points.forEach((p, i) => {
+            plotPoints.forEach((p, i) => {
                 const x = xAt(i);
                 const y = yAt(Number(p.temperature));
                 if (i === 0) ctx.moveTo(x, y);
@@ -289,18 +312,33 @@
             ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            ctx.fillStyle = '#2f7dfa';
-            points.forEach((p, i) => {
-                ctx.beginPath();
-                ctx.arc(xAt(i), yAt(Number(p.temperature)), 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            if (plotPoints.length <= 120) {
+                ctx.fillStyle = '#2f7dfa';
+                plotPoints.forEach((p, i) => {
+                    ctx.beginPath();
+                    ctx.arc(xAt(i), yAt(Number(p.temperature)), 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
 
             ctx.fillStyle = '#65789c';
-            ctx.textAlign = 'left';
-            ctx.fillText(points[0].time || '', pad.left, height - 8);
-            ctx.textAlign = 'right';
-            ctx.fillText(points[points.length - 1].time || '', width - pad.right, height - 8);
+            const tickCount = Math.max(2, Math.min(8, Math.floor(chartW / 120) + 1));
+            const tickStep = plotPoints.length === 1 ? 1 : (plotPoints.length - 1) / (tickCount - 1);
+            const tickIndices = [];
+            for (let i = 0; i < tickCount; i += 1) {
+                const idx = Math.round(i * tickStep);
+                if (tickIndices[tickIndices.length - 1] !== idx) {
+                    tickIndices.push(idx);
+                }
+            }
+
+            tickIndices.forEach((idx, i) => {
+                const x = xAt(idx);
+                if (i === 0) ctx.textAlign = 'left';
+                else if (i === tickIndices.length - 1) ctx.textAlign = 'right';
+                else ctx.textAlign = 'center';
+                ctx.fillText(plotPoints[idx].time || '', x, height - 8);
+            });
         }());
     </script>
 </body>

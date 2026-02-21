@@ -39,7 +39,8 @@ php artisan weather:seed-daily --days=30
 8. 画面確認
 
 - `http://localhost:8088/dashboard`
-- 任意日を1日指定する場合: `http://localhost:8088/dashboard?date=2026-02-14`
+- 任意日を1日指定する場合: `http://localhost:8088/dashboard?from=2026-02-14&to=2026-02-14`
+- 期間を指定する場合: `http://localhost:8088/dashboard?from=2026-02-01&to=2026-02-14`（最大183日）
 
 ## バッチコマンド
 - 現在値取得（`cities` 全件）
