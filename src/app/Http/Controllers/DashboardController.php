@@ -27,6 +27,8 @@ class DashboardController extends Controller
             'dayStats' => $dayStats,
             'selectedFrom' => $fromDate->toDateString(),
             'selectedTo' => $toDate->toDateString(),
+            'selectedYMin' => $request->yMin(),
+            'selectedYMax' => $request->yMax(),
             'periodLabel' => $periodLabel,
         ]);
     }

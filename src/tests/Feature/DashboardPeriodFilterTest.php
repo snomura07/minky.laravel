@@ -63,6 +63,26 @@ class DashboardPeriodFilterTest extends TestCase
         $response->assertSessionHasErrors('to');
     }
 
+    public function test_it_accepts_manual_y_range(): void
+    {
+        $this->seedCity();
+        $this->seedWeather(2, '2026-02-14 00:30:00', 3.2);
+
+        $response = $this->get('/dashboard?from=2026-02-14&to=2026-02-14&y_min=0&y_max=20');
+
+        $response->assertOk();
+        $response->assertViewHas('selectedYMin', 0.0);
+        $response->assertViewHas('selectedYMax', 20.0);
+    }
+
+    public function test_it_rejects_invalid_manual_y_range(): void
+    {
+        $response = $this->from('/dashboard')->get('/dashboard?from=2026-02-14&to=2026-02-14&y_min=10&y_max=10');
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('y_max');
+    }
+
     private function seedCity(): void
     {
         City::query()->create([

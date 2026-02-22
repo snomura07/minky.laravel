@@ -21,6 +21,8 @@ class DashboardPeriodValidationRequest extends FormRequest
             'date' => ['nullable', 'date_format:Y-m-d'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
+            'y_min' => ['nullable', 'numeric', 'required_with:y_max'],
+            'y_max' => ['nullable', 'numeric', 'required_with:y_min'],
         ];
     }
 
@@ -30,6 +32,8 @@ class DashboardPeriodValidationRequest extends FormRequest
         $date = $this->input('date');
         $from = $this->input('from');
         $to = $this->input('to');
+        $yMin = $this->input('y_min');
+        $yMax = $this->input('y_max');
 
         if ((!$from || !$to) && $date) {
             $from = $from ?: $date;
@@ -48,6 +52,8 @@ class DashboardPeriodValidationRequest extends FormRequest
         $this->merge([
             'from' => $from,
             'to' => $to,
+            'y_min' => $yMin === '' ? null : $yMin,
+            'y_max' => $yMax === '' ? null : $yMax,
         ]);
     }
 
@@ -59,6 +65,20 @@ class DashboardPeriodValidationRequest extends FormRequest
     public function toDate(): CarbonImmutable
     {
         return CarbonImmutable::createFromFormat('Y-m-d', (string) $this->validated('to'), 'Asia/Tokyo');
+    }
+
+    public function yMin(): ?float
+    {
+        $value = $this->validated('y_min');
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function yMax(): ?float
+    {
+        $value = $this->validated('y_max');
+
+        return $value === null ? null : (float) $value;
     }
 
     public function withValidator(Validator $validator): void
@@ -85,6 +105,16 @@ class DashboardPeriodValidationRequest extends FormRequest
 
             if ($fromDate->diffInDays($toDate) > (self::MAX_RANGE_DAYS - 1)) {
                 $validator->errors()->add('to', sprintf('指定できる期間は最大%d日（約半年）です。', self::MAX_RANGE_DAYS));
+            }
+
+            $yMin = $this->input('y_min');
+            $yMax = $this->input('y_max');
+            if (!is_numeric($yMin) || !is_numeric($yMax)) {
+                return;
+            }
+
+            if ((float) $yMin >= (float) $yMax) {
+                $validator->errors()->add('y_max', 'Y軸レンジは「最小 < 最大」で指定してください。');
             }
         });
     }
