@@ -9,6 +9,7 @@ use Illuminate\Validation\Validator;
 class DashboardPeriodValidationRequest extends FormRequest
 {
     private const MAX_RANGE_DAYS = 183;
+    private const DEFAULT_CITY_ID = 2;
 
     public function authorize(): bool
     {
@@ -18,6 +19,7 @@ class DashboardPeriodValidationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'city_id' => ['required', 'integer', 'exists:cities,id'],
             'date' => ['nullable', 'date_format:Y-m-d'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
@@ -32,6 +34,7 @@ class DashboardPeriodValidationRequest extends FormRequest
         $date = $this->input('date');
         $from = $this->input('from');
         $to = $this->input('to');
+        $cityId = $this->input('city_id');
         $yMin = $this->input('y_min');
         $yMax = $this->input('y_max');
 
@@ -50,6 +53,7 @@ class DashboardPeriodValidationRequest extends FormRequest
         }
 
         $this->merge([
+            'city_id' => $cityId ?: self::DEFAULT_CITY_ID,
             'from' => $from,
             'to' => $to,
             'y_min' => $yMin === '' ? null : $yMin,
@@ -65,6 +69,11 @@ class DashboardPeriodValidationRequest extends FormRequest
     public function toDate(): CarbonImmutable
     {
         return CarbonImmutable::createFromFormat('Y-m-d', (string) $this->validated('to'), 'Asia/Tokyo');
+    }
+
+    public function cityId(): int
+    {
+        return (int) $this->validated('city_id');
     }
 
     public function yMin(): ?float

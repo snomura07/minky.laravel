@@ -84,6 +84,14 @@
             color: var(--text-main);
         }
 
+        .date-form select {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--text-main);
+        }
+
         .date-form button {
             padding: 9px 14px;
             border: 1px solid #2f7dfa;
@@ -258,6 +266,16 @@
             <p class="sub">単日または期間を指定して、気温推移と最高・最低気温を表示します（最大183日）。</p>
             <form id="dashboard-filter-form" class="date-form" method="get" action="{{ route('dashboard') }}">
                 <label>
+                    都市
+                    <select name="city_id">
+                        @foreach ($cities as $city)
+                            <option value="{{ $city->id }}" @selected((int) old('city_id', $selectedCityId) === (int) $city->id)>
+                                {{ $city->city_name }}（{{ $city->prefecture_name }}）
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
                     開始日
                     <input type="date" name="from" value="{{ $selectedFrom }}">
                 </label>
@@ -293,7 +311,7 @@
 
             <section class="chart-panel">
                 <h2 class="chart-title">気温推移</h2>
-                <p class="chart-meta">対象地域: 福井（city_id: 2）</p>
+                <p class="chart-meta">対象地域: {{ $selectedCityLabel }}（city_id: {{ $selectedCityId }}）</p>
                 <div class="chart-layout">
                     <aside class="y-range-panel">
                         <p class="y-range-title">Y軸レンジ</p>
@@ -307,7 +325,7 @@
                         </label>
                         <div class="y-range-actions">
                             <button type="submit" form="dashboard-filter-form">Y軸適用</button>
-                            <a href="{{ route('dashboard', ['from' => $selectedFrom, 'to' => $selectedTo]) }}">自動に戻す</a>
+                            <a href="{{ route('dashboard', ['city_id' => $selectedCityId, 'from' => $selectedFrom, 'to' => $selectedTo]) }}">自動に戻す</a>
                         </div>
                     </aside>
                     <div class="chart-area">

@@ -2,29 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CityAction;
 use App\Actions\WeatherReportAction;
 use App\Http\Requests\DashboardPeriodValidationRequest;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    private const FUKUI_CITY_ID = 2;
-
-    public function __invoke(DashboardPeriodValidationRequest $request, WeatherReportAction $weatherReportAction): View
+    public function __invoke(
+        DashboardPeriodValidationRequest $request,
+        WeatherReportAction $weatherReportAction,
+        CityAction $cityAction
+    ): View
     {
+        $cityId = $request->cityId();
         $fromDate = $request->fromDate();
         $toDate = $request->toDate();
+        $cities = $cityAction->getAll();
+        $selectedCity = $cityAction->findById($cityId);
 
-        $trend = $weatherReportAction->getTrendByPeriod(self::FUKUI_CITY_ID, $fromDate, $toDate);
-        $dayStats = $weatherReportAction->getExtremesByPeriod(self::FUKUI_CITY_ID, $fromDate, $toDate);
+        $trend = $weatherReportAction->getTrendByPeriod($cityId, $fromDate, $toDate);
+        $dayStats = $weatherReportAction->getExtremesByPeriod($cityId, $fromDate, $toDate);
         $periodLabel = $fromDate->isSameDay($toDate)
             ? $fromDate->toDateString()
             : sprintf('%s 〜 %s', $fromDate->toDateString(), $toDate->toDateString());
 
         return view('dashboard', [
-            'title' => '福井気温ダッシュボード',
+            'title' => sprintf(
+                '%s気温ダッシュボード',
+                $selectedCity?->city_name ?? '気象'
+            ),
             'chartData' => $trend,
             'dayStats' => $dayStats,
+            'cities' => $cities,
+            'selectedCityId' => $cityId,
+            'selectedCityLabel' => $selectedCity
+                ? sprintf('%s (%s)', $selectedCity->city_name, $selectedCity->prefecture_name)
+                : sprintf('city_id: %d', $cityId),
             'selectedFrom' => $fromDate->toDateString(),
             'selectedTo' => $toDate->toDateString(),
             'selectedYMin' => $request->yMin(),

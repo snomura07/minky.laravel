@@ -83,6 +83,42 @@ class DashboardPeriodFilterTest extends TestCase
         $response->assertSessionHasErrors('y_max');
     }
 
+    public function test_it_switches_chart_data_by_city_id(): void
+    {
+        $this->seedCity();
+        City::query()->create([
+            'id' => 3,
+            'prefecture_name' => 'Ishikawa',
+            'city_name' => 'Kanazawa',
+            'latitude' => 36.59400,
+            'longitude' => 136.62500,
+        ]);
+        $this->seedWeather(2, '2026-02-14 00:30:00', 3.2);
+        $this->seedWeather(3, '2026-02-14 01:00:00', 7.8);
+        $this->seedWeather(3, '2026-02-14 12:00:00', 9.1);
+
+        $response = $this->get('/dashboard?city_id=3&from=2026-02-14&to=2026-02-14');
+
+        $response->assertOk();
+        $response->assertViewHas('selectedCityId', 3);
+        $response->assertViewHas('selectedCityLabel', 'Kanazawa (Ishikawa)');
+
+        $chartData = $response->viewData('chartData');
+        $this->assertCount(2, $chartData);
+        $this->assertSame(7.8, $chartData[0]['temperature']);
+        $this->assertSame(9.1, $chartData[1]['temperature']);
+    }
+
+    public function test_it_rejects_unknown_city_id(): void
+    {
+        $this->seedCity();
+
+        $response = $this->from('/dashboard')->get('/dashboard?city_id=9999&from=2026-02-14&to=2026-02-14');
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('city_id');
+    }
+
     private function seedCity(): void
     {
         City::query()->create([
