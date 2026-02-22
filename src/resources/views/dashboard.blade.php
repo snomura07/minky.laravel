@@ -224,23 +224,6 @@
             }
             if (!Array.isArray(points) || points.length === 0) return;
 
-            const samplePoints = (source, maxPoints) => {
-                if (!Array.isArray(source) || source.length <= maxPoints) return source;
-                const sampled = [];
-                const used = new Set();
-                const step = (source.length - 1) / (maxPoints - 1);
-                for (let i = 0; i < maxPoints; i += 1) {
-                    const idx = Math.round(i * step);
-                    if (used.has(idx)) continue;
-                    used.add(idx);
-                    sampled.push(source[idx]);
-                }
-                if (sampled[sampled.length - 1] !== source[source.length - 1]) {
-                    sampled[sampled.length - 1] = source[source.length - 1];
-                }
-                return sampled;
-            };
-
             const ctx = canvas.getContext('2d');
             const ratio = window.devicePixelRatio || 1;
             const width = canvas.clientWidth;
@@ -253,10 +236,9 @@
             const chartW = width - pad.left - pad.right;
             const chartH = height - pad.top - pad.bottom;
 
-            const values = points.map((p) => Number(p.temperature)).filter(Number.isFinite);
+            const plotPoints = points.filter((p) => Number.isFinite(Number(p.temperature)));
+            const values = plotPoints.map((p) => Number(p.temperature));
             if (values.length === 0) return;
-            const maxPointCount = Math.max(24, Math.min(360, Math.floor(chartW / 6)));
-            const plotPoints = samplePoints(points, maxPointCount);
 
             const min = Math.min(...values);
             const max = Math.max(...values);
